@@ -6,3 +6,4 @@
 2024-09-17T13:19:29  fix(docs): make timestamps timezone-aware
 2024-10-02T08:36:36  fix: 60% of the time, it works every time
 2024-10-17T15:53:43  feat: do or do not, there is no try/except
+2024-11-02T10:10:50  style(output): simplify the walker
