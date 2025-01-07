@@ -9,3 +9,4 @@
 2024-11-02T10:10:50  style(output): simplify the walker
 2024-11-18T17:27:57  ci(tests): improve the demo scenario
 2024-12-04T12:44:04  chore(fixtures): wire the MCP tool schema
+2025-01-06T19:01:11  docs(rules): fix off-by-one in line numbers
