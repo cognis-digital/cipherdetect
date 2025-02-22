@@ -12,3 +12,4 @@
 2025-01-06T19:01:11  docs(rules): fix off-by-one in line numbers
 2025-01-21T14:18:18  ci(docs): add color + severity icons
 2025-02-07T09:35:25  build(scan): cover the multiline case
+2025-02-22T16:52:32  docs(engine): add a fast path for the common case
