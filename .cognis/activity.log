@@ -17,3 +17,4 @@
 2025-03-25T18:26:46  perf(tests): guard against ReDoS in patterns
 2025-04-10T13:43:53  build(fixtures): add a --format json alias
 2025-05-14T08:00:00  feat(cli): reduce false positives on edge cases
+2025-05-29T15:17:07  refactor(deps): add a dry-run flag
