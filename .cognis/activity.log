@@ -20,3 +20,4 @@
 2025-05-29T15:17:07  refactor(deps): add a dry-run flag
 2025-06-14T10:34:14  perf(mcp): extract the scorer
 2025-06-29T17:51:21  feat(parser): tune severity weights
+2025-07-15T12:08:28  fix(report): clarify the README quickstart
