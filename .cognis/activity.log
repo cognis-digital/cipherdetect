@@ -22,3 +22,4 @@
 2025-06-29T17:51:21  feat(parser): tune severity weights
 2025-07-15T12:08:28  fix(report): clarify the README quickstart
 2025-07-31T19:25:35  docs: ELI5 pass
+2025-09-02T14:42:42  docs: standing on the shoulders of giants (garak, sigma, trufflehog)
