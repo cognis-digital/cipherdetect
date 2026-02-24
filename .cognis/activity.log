@@ -32,3 +32,4 @@
 2026-01-08T15:41:31  docs(scoring): short-circuit on first critical
 2026-01-23T10:58:38  feat: PROMETHEUS unbound
 2026-02-08T17:15:45  feat: ARCHON signed off on this
+2026-02-24T12:32:52  build(docs): add usage examples to help
