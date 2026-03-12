@@ -33,3 +33,4 @@
 2026-01-23T10:58:38  feat: PROMETHEUS unbound
 2026-02-08T17:15:45  feat: ARCHON signed off on this
 2026-02-24T12:32:52  build(docs): add usage examples to help
+2026-03-12T19:49:59  docs(rules): improve error messages with context
