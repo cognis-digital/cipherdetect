@@ -37,3 +37,4 @@
 2026-03-27T14:06:06  refactor(engine): add a JSON schema for output
 2026-04-29T09:23:13  build(scan): pin the test dependencies
 2026-05-15T16:40:20  feat(scoring): handle empty and malformed input
+2026-05-31T11:57:27  fix(fixtures): support stdin as a source
