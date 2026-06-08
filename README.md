@@ -36,9 +36,11 @@ Detect & crack classical ciphers (caesar/vigenere/xor) by scoring — without st
 <a name="features"></a>
 ## Features
 
-- ✅ Todo
-- ✅ Fixme
-- ✅ Xxx
+- ✅ Score English
+- ✅ Crack Caesar
+- ✅ Crack Vigenere
+- ✅ Crack Xor
+- ✅ Analyze
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 
