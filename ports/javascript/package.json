@@ -1,0 +1,10 @@
+{
+  "name": "@cognis/cipherdetect",
+  "version": "0.2.0",
+  "description": "JavaScript port of cipherdetect (Cognis Neural Suite)",
+  "bin": {
+    "cipherdetect": "index.js"
+  },
+  "license": "LicenseRef-COCL-1.0",
+  "type": "module"
+}
