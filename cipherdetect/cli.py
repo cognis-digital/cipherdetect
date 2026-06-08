@@ -1,38 +1,210 @@
-"""CIPHERDETECT command-line interface."""
+"""Command-line interface for CIPHERDETECT.
+
+Usage:
+    python -m cipherdetect crack <file> [--format table|json|html]
+    python -m cipherdetect crack --text "Khoor Zruog"
+    python -m cipherdetect --version
+
+Exit codes:
+    0  no confident finding (nothing decrypted above the confidence floor)
+    1  internal error / bad usage
+    2  at least one confident decryption found (a "finding")
+"""
 from __future__ import annotations
-import argparse, sys
-from cipherdetect.core import scan, to_json, TOOL_NAME, TOOL_VERSION
 
-def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="cipherdetect", description="CIPHERDETECT — Cognis Neural Suite")
-    ap.add_argument("--version", action="version", version=f"{TOOL_NAME} {TOOL_VERSION}")
-    sub = ap.add_subparsers(dest="cmd")
-    s = sub.add_parser("scan", help="scan a file or directory")
-    s.add_argument("target")
-    s.add_argument("--format", choices=["table", "json"], default="table")
-    s.add_argument("--fail-on", choices=["critical", "high", "medium", "low"], default=None)
-    sub.add_parser("mcp", help="run as an MCP server")
-    args = ap.parse_args(argv)
+import argparse
+import html as _html
+import json
+import sys
+from typing import Optional
 
-    if args.cmd == "mcp":
-        from cipherdetect.mcp_server import serve
-        return serve()
-    if args.cmd == "scan":
-        res = scan(args.target)
-        if args.format == "json":
-            print(to_json(res))
-        else:
-            if not res.findings:
-                print(f"[{TOOL_NAME}] no findings in {args.target}")
-            for f in res.findings:
-                print(f"  [{f.severity.upper():8}] {f.id}  {f.title}  ({f.where})")
-            print(f"\n{len(res.findings)} findings · risk score {res.score} · {res.elapsed_ms}ms")
-        order = {"critical": 4, "high": 3, "medium": 2, "low": 1}
-        if args.fail_on and any(order.get(f.severity, 0) >= order[args.fail_on] for f in res.findings):
-            return 2
-        return 0
-    ap.print_help()
+from . import TOOL_NAME, TOOL_VERSION
+from .core import Candidate, analyze
+
+# A finding = a decryption confident enough to be worth surfacing.
+FINDING_FLOOR = 0.35
+
+_SEVERITY_COLORS = {
+    "high": "#c0392b",
+    "medium": "#d35400",
+    "low": "#b7950b",
+    "info": "#7f8c8d",
+}
+
+
+def _truncate(s: str, n: int = 80) -> str:
+    s = s.replace("\n", "\\n").replace("\r", "")
+    return s if len(s) <= n else s[: n - 1] + "…"
+
+
+def _render_table(cands: list[Candidate]) -> str:
+    lines = []
+    header = f"{'#':<3} {'CIPHER':<9} {'SEV':<7} {'SCORE':>6}  {'KEY':<16} PLAINTEXT"
+    lines.append(header)
+    lines.append("-" * len(header))
+    for i, c in enumerate(cands, 1):
+        lines.append(
+            f"{i:<3} {c.cipher:<9} {c.severity:<7} {c.score:>6.3f}  "
+            f"{_truncate(c.key, 16):<16} {_truncate(c.plaintext, 60)}"
+        )
+    return "\n".join(lines)
+
+
+def _render_json(cands: list[Candidate]) -> str:
+    payload = {
+        "tool": TOOL_NAME,
+        "version": TOOL_VERSION,
+        "finding_floor": FINDING_FLOOR,
+        "candidates": [c.to_dict() for c in cands],
+        "best": cands[0].to_dict() if cands else None,
+    }
+    return json.dumps(payload, indent=2)
+
+
+def _render_html(cands: list[Candidate], source: str) -> str:
+    best = cands[0] if cands else None
+    rows = []
+    for i, c in enumerate(cands, 1):
+        color = _SEVERITY_COLORS.get(c.severity, "#7f8c8d")
+        rows.append(
+            "<tr>"
+            f"<td>{i}</td>"
+            f"<td><code>{_html.escape(c.cipher)}</code></td>"
+            f'<td><span class="sev" style="background:{color}">'
+            f"{_html.escape(c.severity)}</span></td>"
+            f"<td>{c.score:.3f}</td>"
+            f"<td><code>{_html.escape(c.key)}</code></td>"
+            f"<td class=\"pt\">{_html.escape(_truncate(c.plaintext, 120))}</td>"
+            "</tr>"
+        )
+    summary = (
+        f"Best guess: <b>{_html.escape(best.cipher)}</b> "
+        f"({_html.escape(best.key)}) &mdash; score {best.score:.3f} "
+        f'<span class="sev" style="background:{_SEVERITY_COLORS.get(best.severity)}">'
+        f"{_html.escape(best.severity)}</span>"
+        if best else "No candidates produced."
+    )
+    decoded = _html.escape(best.plaintext) if best else ""
+    return f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<title>{TOOL_NAME} report</title>
+<style>
+  body {{ font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+         margin: 0; background: #f4f6f8; color: #1c2733; }}
+  header {{ background: #1c2733; color: #fff; padding: 18px 28px; }}
+  header h1 {{ margin: 0; font-size: 20px; }}
+  header .meta {{ opacity: .7; font-size: 13px; margin-top: 4px; }}
+  .wrap {{ max-width: 980px; margin: 24px auto; padding: 0 20px; }}
+  .card {{ background: #fff; border-radius: 10px; padding: 18px 22px;
+          box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px; }}
+  .summary {{ font-size: 15px; }}
+  pre.decoded {{ background: #0f1722; color: #6fe26f; padding: 14px;
+               border-radius: 8px; overflow:auto; white-space: pre-wrap;
+               word-break: break-word; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+  th, td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid #e3e8ee; }}
+  th {{ background: #eef2f6; }}
+  td.pt {{ font-family: ui-monospace, Menlo, monospace; font-size: 13px; }}
+  code {{ background: #eef2f6; padding: 1px 5px; border-radius: 4px; }}
+  .sev {{ color: #fff; padding: 2px 8px; border-radius: 10px;
+         font-size: 12px; font-weight: 600; }}
+  footer {{ text-align: center; color: #8a97a5; font-size: 12px;
+           padding: 16px; }}
+</style></head>
+<body>
+<header>
+  <h1>\U0001F50D {TOOL_NAME} — cipher analysis report</h1>
+  <div class="meta">v{TOOL_VERSION} &middot; source: {_html.escape(source)}</div>
+</header>
+<div class="wrap">
+  <div class="card summary">{summary}</div>
+  <div class="card">
+    <h3>Decoded plaintext (best candidate)</h3>
+    <pre class="decoded">{decoded}</pre>
+  </div>
+  <div class="card">
+    <h3>All ranked candidates</h3>
+    <table>
+      <tr><th>#</th><th>Cipher</th><th>Severity</th><th>Score</th>
+          <th>Key</th><th>Plaintext</th></tr>
+      {''.join(rows)}
+    </table>
+  </div>
+</div>
+<footer>Generated by {TOOL_NAME} &middot; defensive forensics tool</footer>
+</body></html>
+"""
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog=TOOL_NAME,
+        description="Detect and crack classical ciphers (Caesar/Vigenere/XOR) by scoring.",
+    )
+    p.add_argument("--version", action="version",
+                   version=f"{TOOL_NAME} {TOOL_VERSION}")
+    sub = p.add_subparsers(dest="command")
+
+    crack = sub.add_parser("crack", help="Analyze ciphertext and rank decryptions.")
+    src = crack.add_mutually_exclusive_group(required=True)
+    src.add_argument("file", nargs="?", help="Path to ciphertext file.")
+    src.add_argument("--text", help="Inline ciphertext string.")
+    crack.add_argument("--format", choices=["table", "json", "html"],
+                       default="table", help="Output format.")
+    crack.add_argument("--top", type=int, default=5,
+                       help="Number of candidates to show (default 5).")
+    crack.add_argument("--max-key-len", type=int, default=12,
+                       help="Max Vigenere key length to test (default 12).")
+    crack.add_argument("-o", "--output", help="Write report to this file.")
+    return p
+
+
+def _read_input(args: argparse.Namespace) -> tuple[bytes, str]:
+    if args.text is not None:
+        return args.text.encode("utf-8"), "--text"
+    with open(args.file, "rb") as f:
+        return f.read(), args.file
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(argv)
+
+    if args.command != "crack":
+        parser.print_help()
+        return 1
+
+    try:
+        raw, source = _read_input(args)
+    except OSError as e:
+        print(f"error: cannot read input: {e}", file=sys.stderr)
+        return 1
+
+    cands = analyze(raw, top=args.top, max_key_len=args.max_key_len)
+
+    if args.format == "json":
+        report = _render_json(cands)
+    elif args.format == "html":
+        report = _render_html(cands, source)
+    else:
+        report = _render_table(cands)
+
+    if args.output:
+        try:
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write(report)
+            print(f"wrote {args.format} report to {args.output}", file=sys.stderr)
+        except OSError as e:
+            print(f"error: cannot write output: {e}", file=sys.stderr)
+            return 1
+    else:
+        print(report)
+
+    # Finding = a confident decryption above the floor -> exit 2.
+    if cands and cands[0].score >= FINDING_FLOOR:
+        return 2
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())
