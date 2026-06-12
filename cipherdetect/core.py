@@ -6,10 +6,8 @@ ranks every candidate decryption by likelihood.
 """
 from __future__ import annotations
 
-import math
 import re
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import dataclass, asdict
 
 # Relative English letter frequencies (percent). Source: standard corpus stats.
 _ENGLISH_FREQ = {

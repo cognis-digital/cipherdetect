@@ -16,7 +16,7 @@
 </div>
 
 ```bash
-pip install cognis-cipherdetect
+pip install "git+https://github.com/cognis-digital/cipherdetect.git"
 cipherdetect scan .            # → prioritized findings in seconds
 ```
 
@@ -50,7 +50,7 @@ Detect & crack classical ciphers (caesar/vigenere/xor) by scoring — without st
 ## Quick start
 
 ```bash
-pip install cognis-cipherdetect
+pip install "git+https://github.com/cognis-digital/cipherdetect.git"
 cipherdetect --version
 cipherdetect scan .                       # scan current project
 cipherdetect scan . --format json         # machine-readable
