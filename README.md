@@ -20,6 +20,46 @@ pip install cognis-cipherdetect
 cipherdetect scan .            # → prioritized findings in seconds
 ```
 
+## Usage — step by step
+
+1. **Install:**
+
+   ```bash
+   pip install -e .
+   ```
+
+2. **Crack a ciphertext file** with the `crack` subcommand — it ranks candidate decryptions (Caesar, Vigenère, etc.) by confidence:
+
+   ```bash
+   cipherdetect crack secret.txt
+   ```
+
+   Or pass the ciphertext inline with `--text`:
+
+   ```bash
+   cipherdetect crack --text "Khoor Zruog"
+   ```
+
+3. **Tune the search** with `--top` (number of candidates shown, default 5) and `--max-key-len` (max Vigenère key length to test, default 12):
+
+   ```bash
+   cipherdetect crack secret.txt --top 10 --max-key-len 16
+   ```
+
+4. **Read the result.** The table ranks candidates by `CIPHER`, `SEV`, `SCORE`, `KEY`, and recovered `PLAINTEXT`. Use `--format json` for piping or `--format html -o report.html` for a shareable report. Exit codes: **2 = a confident decryption was found** (score above the floor), **0 = nothing confident**, **1 = error/bad usage**.
+
+   ```bash
+   cipherdetect crack secret.txt --format json
+   ```
+
+5. **Use it in CI / triage** — surface when weak/classical encryption is trivially breakable:
+
+   ```bash
+   cipherdetect crack secret.txt --format json
+   if [ $? -eq 2 ]; then echo "Ciphertext was cracked — weak cipher"; fi
+   ```
+
+
 ## Contents
 
 - [Why cipherdetect?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
