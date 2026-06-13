@@ -132,14 +132,27 @@ def _vigenere_decrypt(text: str, key: str) -> str:
 
 
 def _best_caesar_shift_for_column(column: str) -> int:
-    best_shift, best_chi = 0, 1e18
+    """Return the shift that maximises dot-product correlation with English
+    letter frequencies.  Correlation is more robust than chi-squared for the
+    short per-column samples typical in Vigenere analysis."""
+    n = len(column)
+    if n == 0:
+        return 0
+    counts: dict[str, int] = {}
+    for c in column:
+        counts[c] = counts.get(c, 0) + 1
+    best_shift, best_score = 0, -1.0
     for shift in range(26):
-        decoded = "".join(
-            chr((ord(c) - 97 - shift) % 26 + 97) for c in column
-        )
-        chi = _letter_freq_chi2(decoded)
-        if chi < best_chi:
-            best_chi, best_shift = chi, shift
+        score = 0.0
+        for letter, eng_freq in _ENGLISH_FREQ.items():
+            # The cipher letter produced when plaintext letter `letter` is
+            # encrypted with `shift` is chr((ord(letter)-97+shift)%26+97).
+            # So we correlate observed frequency of the cipher letter with the
+            # English frequency of the corresponding plaintext letter.
+            cipher_letter = chr((ord(letter) - 97 + shift) % 26 + 97)
+            score += (counts.get(cipher_letter, 0) / n) * (eng_freq / 100.0)
+        if score > best_score:
+            best_score, best_shift = score, shift
     return best_shift
 
 
