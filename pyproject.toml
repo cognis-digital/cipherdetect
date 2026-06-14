@@ -34,3 +34,6 @@ cipherdetect = "cipherdetect.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["cipherdetect"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
