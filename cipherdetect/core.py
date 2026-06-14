@@ -223,7 +223,18 @@ def analyze(raw: bytes, top: int = 5, max_key_len: int = 12) -> list[Candidate]:
 
     `raw` is the ciphertext bytes. Text-based ciphers (Caesar/Vigenere) use a
     best-effort UTF-8/latin-1 decode; XOR operates on raw bytes.
+
+    Raises TypeError if *raw* is not bytes-like.
+    Returns an empty list if *raw* is empty.
     """
+    if not isinstance(raw, (bytes, bytearray)):
+        raise TypeError(f"analyze() expects bytes, got {type(raw).__name__}")
+    if not raw:
+        return []
+    # Clamp numeric parameters to safe ranges; callers with validated input
+    # will never hit these, but defensive clamping prevents surprising results.
+    top = max(1, min(top, 500))
+    max_key_len = max(1, min(max_key_len, 64))
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:

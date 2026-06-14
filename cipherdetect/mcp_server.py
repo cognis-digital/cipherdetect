@@ -1,6 +1,8 @@
-"""CIPHERDETECT MCP server — exposes scan() as an MCP tool for Cognis.Studio."""
+"""CIPHERDETECT MCP server — exposes analyze() as an MCP tool for Cognis.Studio."""
 from __future__ import annotations
-from cipherdetect.core import scan, to_json
+import json as _json
+from cipherdetect.core import analyze
+
 
 def serve() -> int:
     """Start an MCP stdio server. Requires the optional 'mcp' extra:
@@ -8,7 +10,7 @@ def serve() -> int:
     """
     try:
         from mcp.server.fastmcp import FastMCP
-    except Exception:
+    except ImportError:
         print("Install the MCP extra: pip install 'cognis-cipherdetect[mcp]'")
         return 1
     app = FastMCP("cipherdetect")
@@ -16,7 +18,10 @@ def serve() -> int:
     @app.tool()
     def cipherdetect_scan(target: str) -> str:
         """Detect & crack classical ciphers (caesar/vigenere/xor) by scoring. Returns JSON findings."""
-        return to_json(scan(target))
+        if not target:
+            return _json.dumps({"error": "empty input", "candidates": []})
+        candidates = analyze(target.encode("utf-8", errors="replace"))
+        return _json.dumps({"candidates": [c.to_dict() for c in candidates]}, indent=2)
 
     app.run()
     return 0

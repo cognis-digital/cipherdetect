@@ -162,8 +162,24 @@ def _build_parser() -> argparse.ArgumentParser:
 def _read_input(args: argparse.Namespace) -> tuple[bytes, str]:
     if args.text is not None:
         return args.text.encode("utf-8"), "--text"
+    import os as _os
+    if not _os.path.exists(args.file):
+        raise FileNotFoundError(f"file not found: {args.file}")
     with open(args.file, "rb") as f:
         return f.read(), args.file
+
+
+def _validate_args(args: argparse.Namespace) -> "str | None":
+    """Return an error string if numeric arguments are out of range, else None."""
+    if args.top < 1:
+        return f"--top must be >= 1, got {args.top}"
+    if args.top > 500:
+        return f"--top must be <= 500, got {args.top}"
+    if args.max_key_len < 1:
+        return f"--max-key-len must be >= 1, got {args.max_key_len}"
+    if args.max_key_len > 64:
+        return f"--max-key-len must be <= 64, got {args.max_key_len}"
+    return None
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -174,13 +190,26 @@ def main(argv: Optional[list[str]] = None) -> int:
         parser.print_help()
         return 1
 
+    err = _validate_args(args)
+    if err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1
+
     try:
         raw, source = _read_input(args)
     except OSError as e:
         print(f"error: cannot read input: {e}", file=sys.stderr)
         return 1
 
-    cands = analyze(raw, top=args.top, max_key_len=args.max_key_len)
+    if not raw:
+        print("error: input is empty -- nothing to analyze", file=sys.stderr)
+        return 1
+
+    try:
+        cands = analyze(raw, top=args.top, max_key_len=args.max_key_len)
+    except Exception as e:  # pragma: no cover
+        print(f"error: analysis failed: {e}", file=sys.stderr)
+        return 1
 
     if args.format == "json":
         report = _render_json(cands)
