@@ -157,6 +157,45 @@ def _ic(text: str) -> float:
     return sum(v * (v - 1) for v in counts.values()) / (n * (n - 1))
 
 
+def _refine_vigenere_key(text: str, key: str) -> str:
+    """Refine a chi2-derived key by maximizing full-text English score.
+    Per-column chi2 is noisy on short columns; coordinate ascent plus a bounded
+    2-opt (pairwise) sweep escapes the local optima it gets stuck in."""
+    import itertools
+    keyl = [ord(c) - 97 for c in key]
+    klen = len(keyl)
+
+    def score(kl):
+        return score_english(_vigenere_decrypt(text, "".join(chr(s % 26 + 97) for s in kl)))
+
+    for _ in range(8):
+        improved = False
+        for i in range(klen):                                  # 1-opt: best shift per column
+            base = keyl[i]
+            best_s, best_sc = base, score(keyl)
+            for s in range(26):
+                keyl[i] = s
+                sc = score(keyl)
+                if sc > best_sc:
+                    best_sc, best_s = sc, s
+            keyl[i] = best_s
+            improved |= best_s != base
+        if klen <= 8:                                          # 2-opt: joint pair moves
+            for i, j in itertools.combinations(range(klen), 2):
+                best = (score(keyl), keyl[i], keyl[j])
+                for a in range(26):
+                    for b in range(26):
+                        keyl[i], keyl[j] = a, b
+                        sc = score(keyl)
+                        if sc > best[0]:
+                            best = (sc, a, b)
+                keyl[i], keyl[j] = best[1], best[2]
+                improved |= (best[1], best[2]) != (keyl[i], keyl[j])
+        if not improved:
+            break
+    return "".join(chr(s % 26 + 97) for s in keyl)
+
+
 def crack_vigenere(text: str, max_key_len: int = 12) -> list[Candidate]:
     """Estimate key length via index-of-coincidence, derive key per column."""
     letters = [c for c in text.lower() if c.isalpha() and c.isascii()]
@@ -176,6 +215,7 @@ def crack_vigenere(text: str, max_key_len: int = 12) -> list[Candidate]:
         key = "".join(
             chr(_best_caesar_shift_for_column(col) % 26 + 97) for col in cols
         )
+        key = _refine_vigenere_key(text, key)
         pt = _vigenere_decrypt(text, key)
         candidates.append(
             Candidate("vigenere", f"key={key}", pt, score_english(pt),
