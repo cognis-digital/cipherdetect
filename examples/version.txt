@@ -1,0 +1,3 @@
+$ cipherdetect-emit --version
+
+cipherdetect 0.1.0

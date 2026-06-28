@@ -1,0 +1,13 @@
+$ cipherdetect-emit --help
+
+usage: cipherdetect [-h] [--version] {crack} ...
+
+Detect and crack classical ciphers (Caesar/Vigenere/XOR) by scoring.
+
+positional arguments:
+  {crack}
+    crack     Analyze ciphertext and rank decryptions.
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit

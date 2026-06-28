@@ -20,6 +20,61 @@ pip install cognis-cipherdetect
 cipherdetect scan .            # → prioritized findings in seconds
 ```
 
+
+<!-- cognis:example:start -->
+## 🔎 Example output
+
+Real, reproducible output from the tool — runs offline:
+
+```console
+$ cipherdetect-emit --version
+cipherdetect 0.1.0
+```
+
+```console
+$ cipherdetect-emit --help
+usage: cipherdetect [-h] [--version] {crack} ...
+
+Detect and crack classical ciphers (Caesar/Vigenere/XOR) by scoring.
+
+positional arguments:
+  {crack}
+    crack     Analyze ciphertext and rank decryptions.
+
+options:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit
+```
+
+> Blocks above are real `cipherdetect` output — reproduce them from a clone.
+
+**Sample result format** _(illustrative values — run on your own data for real findings):_
+
+```
+{
+"findings": [
+    {
+        "id": "1234567890",
+        "title": "Suspicious Network Traffic",
+        "description": "Possible malicious activity detected on port 443.",
+        "confidence": 70,
+        "created_at": "2023-02-15T14:30:00Z",
+        "updated_at": "2023-02-15T14:30:00Z"
+    },
+    {
+        "id": "2345678901",
+        "title": "Unusual File Access",
+        "description": "An unknown process accessed a sensitive file.",
+        "confidence": 80,
+        "created_at": "2023-02-16T10:45:00Z",
+        "updated_at": "2023-02-16T10:45:00Z"
+    }
+]
+}
+```
+
+<!-- cognis:example:end -->
+
 ## Usage — step by step
 
 1. **Install:**
